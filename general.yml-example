@@ -1,0 +1,50 @@
+# Each Confirm backend is a 'source' here.
+# A source may provide assets for one or more layers.
+sources:
+  example_test:
+    url: https://example.org/ConfirmConnector.asmx"
+    user: myuser
+    password: mypassword
+    tenant: "Example Council - Test"
+  example_production:
+    url: https://example.org/ConfirmConnector.asmx"
+    user: myuser
+    password: mypassword
+    tenant: "Example Council - Production"
+
+# Add your MapIt API key to lift rate limiting, if you'll be downloading
+# lots of areas or running the script many times.
+mapit:
+  api_key: 1234abcd
+
+# A layer is an individual output file produced by the script.
+# Each layer can have one or more asset feature types contained within.
+# Asset type can be determined by the 'FeatureTypeName' property of each feature.
+layers:
+  - source: example_test
+    # The geographic extent of the layer can be determined by providing a MapIt
+    # area id or a bounding box, see below.
+    mapit_id: 42050
+
+    # Alternatively a bounding box can be provided, in WSEN format (these must be
+    # EPSG:27700 values):
+    bbox: 528163,179358,531172,181356
+
+    # The Confirm Feature Type Code(s) to fetch for this layer
+    feature_types:
+      - SL1 # Street Lights
+
+    # Confirm only returns 100 assets maximum for each AssetSearch call,
+    # and calls can be quite slow if a large area is requested.
+    # This box_size parameter is used to determine the maximum area that will be
+    # requested, and corresponds to the length of the side of the square in metres.
+    # If the MapIt area or bounding box is bigger than this, it'll be broken down
+    # into squares of this size which will be requested individually.
+    box_size: 1000
+
+    # The file to save this layer to.
+    # Available file extensions: gpkg, shp, geojson.
+    # NB if running via Docker this must be a path within the current directory,
+    # not an absolute path. (Unless invoking `docker run` and setting OUTPUT_PREFIX
+    # yourself.)
+    output: street_lights.gpkg
