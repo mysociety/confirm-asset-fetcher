@@ -2,6 +2,7 @@
 import sys
 import os
 from datetime import datetime
+from math import ceil
 
 import yaml
 import fiona
@@ -87,14 +88,15 @@ def AssetSearchToFeatures(source, bbox, feature_types=[], box_size=None, indent=
     x1, y1, x2, y2 = bbox
     features = []
 
+    # Pad by a metre in case there are assets right on the edge
+    overlap = 1
     if box_size is not None:
         xs = list(range(x1, x2, box_size)) + [x2]
         ys = list(range(y1, y2, box_size)) + [y2]
         bounding_boxes = []
         for (w, e) in zip(xs, xs[1:]):
             for (s, n) in zip(ys, ys[1:]):
-                # Pad by a metre in case there are assets right on the edge
-                bounding_boxes.append((w-1, s-1, e+1, n+1))
+                bounding_boxes.append((w-overlap, s-overlap, e+overlap, n+overlap))
     else:
         bounding_boxes = [(x1, y1, x2, y2)]
 
@@ -107,8 +109,9 @@ def AssetSearchToFeatures(source, bbox, feature_types=[], box_size=None, indent=
         if len(box_features) == 100:
             # Confirm only returns the first 100 assets for a given search box
             # so split the current box into quarters and add them to the list
-            log(f"{pad}Recursing to box size {box_size//2}")
-            yield from AssetSearchToFeatures(source, current_bbox, feature_types=feature_types, box_size=box_size//2, indent=indent+1)
+            new_box_size = ceil(box_size/2)
+            log(f"{pad}Recursing to box size {new_box_size}")
+            yield from AssetSearchToFeatures(source, current_bbox, feature_types=feature_types, box_size=new_box_size, indent=indent+1)
         else:
             yield from box_features
 
