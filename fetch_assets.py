@@ -155,7 +155,7 @@ def process_layer(layer, config):
         api_key = (config.get('mapit') or {}).get('api_key')
         bbox = get_mapit_bbox(layer['mapit_id'], api_key)
     else:
-        bbox = layer['bbox'].split(",")
+        bbox = [int(x) for x in layer['bbox'].split(",")]
 
     log(f"Saving layer {layer['output']}")
 
