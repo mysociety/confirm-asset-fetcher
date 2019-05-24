@@ -15,11 +15,6 @@ Then run the script:
 $ make fetch
 ```
 
-Or directly from GitHub if you're feeling brave:
-```bash
-$ curl https://raw.githubusercontent.com/mysociety/confirm-asset-fetcher/master/Makefile | make -f - fetch
-```
-
 ## Running locally
 
 The script uses `pipenv` for virtualenv management, so install that if you haven't already. Then, run the script:
