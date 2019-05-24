@@ -3,6 +3,7 @@ import sys
 import os
 from datetime import datetime
 from math import ceil
+from time import sleep
 
 import yaml
 import fiona
@@ -49,8 +50,11 @@ def make_operation_request(config, *operations):
         'Content-Type': 'text/xml; charset=utf-8',
         'Soapaction': 'http://www.confirm.co.uk/schema/am/connector/webservice/ProcessOperations',
     }
-    response = requests.post(config['url'], request_body, headers=headers, stream=True)
-    return response
+    for attempt in range(3):
+        response = requests.post(config['url'], request_body, headers=headers, stream=True)
+        if response.ok:
+            return response
+        sleep(5)
 
 
 def AssetSearchFeaturesForBBOX(source, bbox, feature_types=[]):
