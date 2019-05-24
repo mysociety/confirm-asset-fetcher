@@ -110,7 +110,7 @@ def AssetSearchToFeatures(source, bbox, feature_types=[], box_size=None, indent=
         log(f"{pad}Queue size: {len(bounding_boxes)}")
         current_bbox = bounding_boxes.pop(0)
         box_features = AssetSearchFeaturesForBBOX(source, current_bbox, feature_types=feature_types)
-        if len(box_features) == 100:
+        if len(box_features) == 100 and box_size > 10:
             # Confirm only returns the first 100 assets for a given search box
             # so split the current box into quarters and add them to the list
             new_box_size = ceil(box_size/2)
