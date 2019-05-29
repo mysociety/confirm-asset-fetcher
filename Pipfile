@@ -10,7 +10,6 @@ pudb = "*"
 
 [packages]
 fiona = "*"
-shapely = {extras = ["vectorized"],version = "*"}
 geomet = "*"
 pyyaml = "*"
 requests = "*"
