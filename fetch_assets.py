@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import os
+import os.path
 from datetime import datetime
 from math import ceil
 from time import sleep
@@ -54,7 +55,7 @@ def make_operation_request(config, *operations):
         "Content-Type": "text/xml; charset=utf-8",
         "Soapaction": "http://www.confirm.co.uk/schema/am/connector/webservice/ProcessOperations",
     }
-    for attempt in range(3):
+    for _ in range(3):
         response = requests.post(
             config["url"], request_body, headers=headers, stream=True
         )
@@ -184,6 +185,16 @@ def get_mapit_bbox(area_id, api_key):
     return (w, s, e, n)
 
 
+def skip_invalid_features(features, geometry_type):
+    for f in features:
+        if f["geometry"]["type"] != geometry_type:
+            log(
+                f"Skipping feature CentralAssetId {f['properties']['CentralAssetId']} with invalid geometry type ({f['geometry']['type']})"
+            )
+            continue
+        yield f
+
+
 def process_layer(layer, config):
     if "mapit_id" in layer:
         api_key = (config.get("mapit") or {}).get("api_key")
@@ -193,11 +204,13 @@ def process_layer(layer, config):
 
     log(f"Saving layer {layer['output']}")
 
+    geometry_type = layer.get("geometry_type", "Point")
+
     meta = {
         "crs": {"init": "epsg:27700"},
         "driver": DRIVERS.get(layer["output"].rsplit(".", 1)[-1]),
         "schema": {
-            "geometry": layer.get("geometry_type", "Point"),
+            "geometry": geometry_type,
             "properties": {
                 "FeatureX": "float",
                 "FeatureY": "float",
@@ -214,9 +227,13 @@ def process_layer(layer, config):
     features = AssetSearchToFeatures(
         source, bbox, layer["feature_types"], layer["box_size"]
     )
+    features = skip_invalid_features(features, geometry_type)
+
+    outpath = os.path.join(OUTPUT_PREFIX, layer["output"])
+    os.makedirs(os.path.dirname(outpath), exist_ok=True)
 
     with fiona.open(
-        os.path.join(OUTPUT_PREFIX, layer["output"]), "w", **meta
+        outpath, "w", **meta
     ) as output:
         output.writerecords(features)
     log("done.")
