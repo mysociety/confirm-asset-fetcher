@@ -8,20 +8,21 @@ shapefile/GeoJSON/geopackage.
 The quickest way to get going is with the pre-built Docker image and the Makefile
 in this repository.
 
-First, copy `general.yml-example` to `general.yml` and configure as appropriate.
-Then run the script:
-
-```bash
-$ make fetch
-```
+ 1. Clone this repo
+ 1. Make sure Docker is installed and running ([Docker Desktop](https://www.docker.com/products/docker-desktop/) is probably best).
+ 1. Copy `general.yml-example` to `general.yml` and configure as appropriate.
+ 1. Run the script:
+    ```bash
+    $ make fetch
+    ```
 
 ## Running locally
 
-The script uses `pipenv` for virtualenv management, so install that if you haven't already. Then, run the script:
+The script uses [Poetry](https://python-poetry.org) for virtualenv management, so install that if you haven't already. Then, run the script:
 
 ```
-$ pipenv install
-$ pipenv run python fetch_assets.py
+$ poetry install
+$ poetry run python fetch_assets.py
 ```
 
 ## Caveats
