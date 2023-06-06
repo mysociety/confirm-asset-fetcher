@@ -6,10 +6,16 @@ fetch:
 		-t fixmystreet/confirm-asset-fetcher
 
 build:
-	docker -D build -t fixmystreet/confirm-asset-fetcher .
+	date > version.txt
+	git rev-parse HEAD >> version.txt
+	docker build -t fixmystreet/confirm-asset-fetcher .
+	rm version.txt
 
-push: build
-	docker push fixmystreet/confirm-asset-fetcher
+publish:
+	date > version.txt
+	git rev-parse HEAD >> version.txt
+	docker buildx build --push --platform linux/arm64/v8,linux/amd64 -t fixmystreet/confirm-asset-fetcher:latest .
+	rm version.txt
 
 shell:
 	docker run -ti fixmystreet/confirm-asset-fetcher bash

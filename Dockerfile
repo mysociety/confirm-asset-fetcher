@@ -18,6 +18,6 @@ COPY poetry.lock pyproject.toml /app/
 RUN poetry config virtualenvs.create false \
     && poetry install --only main --no-interaction --no-ansi
 
-COPY fetch_assets.py /app
+COPY fetch_assets.py version.txt /app/
 
 CMD poetry -q run python fetch_assets.py
