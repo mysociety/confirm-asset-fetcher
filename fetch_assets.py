@@ -5,6 +5,7 @@ import os.path
 from datetime import datetime
 from math import ceil
 from time import sleep
+from pprint import pprint
 
 import yaml
 import fiona
@@ -69,16 +70,22 @@ def AssetSearchFeaturesForBBOX(source, bbox, feature_types=[]):
     feature_types = "\n".join(
         [f"<FeatureGroupCode>{f}</FeatureGroupCode>" for f in feature_types]
     )
-    response = operation_request_as_dict(
-        source,
-        f"""<AssetSearch>
-        <SearchBoundX1>{x1}</SearchBoundX1>
-        <SearchBoundY1>{y1}</SearchBoundY1>
-        <SearchBoundX2>{x2}</SearchBoundX2>
-        <SearchBoundY2>{y2}</SearchBoundY2>
-        {feature_types}
-    </AssetSearch>""",
-    )
+    try:
+        response = operation_request_as_dict(
+            source,
+            f"""<AssetSearch>
+            <SearchBoundX1>{x1}</SearchBoundX1>
+            <SearchBoundY1>{y1}</SearchBoundY1>
+            <SearchBoundX2>{x2}</SearchBoundX2>
+            <SearchBoundY2>{y2}</SearchBoundY2>
+            {feature_types}
+        </AssetSearch>""",
+        )
+    except Exception as err:
+        log(f"Error calling AssetSearch for {bbox} {feature_types}")
+        log(str(err))
+        return []
+
     features = []
     for asset in response.get("AssetSearchResponse", []):
         if not asset or isinstance(asset, str):
@@ -142,15 +149,19 @@ def operation_request_as_dict(config, operation):
     response = make_operation_request(config, operation)
     doc = etree.parse(response.raw)
     parsed = etree_to_dict(doc.getroot())
-    return parsed["{http://schemas.xmlsoap.org/soap/envelope/}Envelope"][
-        "{http://schemas.xmlsoap.org/soap/envelope/}Body"
-    ][
-        "{http://www.confirm.co.uk/schema/am/connector/webservice}ProcessOperationsResult"
-    ][
-        "Response"
-    ][
-        "OperationResponse"
-    ]
+    try:
+        return parsed["{http://schemas.xmlsoap.org/soap/envelope/}Envelope"][
+            "{http://schemas.xmlsoap.org/soap/envelope/}Body"
+        ][
+            "{http://www.confirm.co.uk/schema/am/connector/webservice}ProcessOperationsResult"
+        ][
+            "Response"
+        ][
+            "OperationResponse"
+        ]
+    except KeyError:
+        log(pprint(parsed))
+        raise
 
 
 def etree_to_dict(t):
