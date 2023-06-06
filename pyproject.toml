@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "asset-fetcher"
+version = "0.1.0"
+description = ""
+authors = ["Dave Arter <davea@mysociety.org>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+Fiona = "^1.9.4.post1"
+geomet = "^1.0.0"
+pyyaml = "^6.0"
+requests = "^2.31.0"
+lxml = "^4.9.2"
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.3.0"
+ipython = "^8.14.0"
+pudb = "^2022.1.3"
+pylint = "^2.17.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
