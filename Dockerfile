@@ -1,23 +1,16 @@
-FROM python:3.11
+FROM python:alpine
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 ENV PYTHONFAULTHANDLER=1 \
-    PYTHONUNBUFFERED=1 \
-    PYTHONHASHSEED=random \
-    PIP_NO_CACHE_DIR=off \
-    PIP_DISABLE_PIP_VERSION_CHECK=on \
-    PIP_DEFAULT_TIMEOUT=100 \
-    POETRY_VERSION=1.5.1
+  PYTHONUNBUFFERED=1 \
+  PYTHONHASHSEED=random
 
-RUN pip install "poetry==$POETRY_VERSION" \
-    && apt-get update && apt-get install -y libsqlite3-mod-spatialite libgdal-dev \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --update --no-cache gcc g++ musl-dev libffi-dev libspatialite-dev gdal-dev
 
 WORKDIR /app
-COPY poetry.lock pyproject.toml /app/
-
-RUN poetry config virtualenvs.create false \
-    && poetry install --only main --no-interaction --no-ansi
 
 COPY fetch_assets.py version.txt /app/
 
-CMD poetry -q run python fetch_assets.py
+RUN uv sync --script fetch_assets.py
+
+CMD ["uv", "run", "--script", "fetch_assets.py"]

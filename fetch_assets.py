@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "fiona",
+#     "geomet",
+#     "lxml",
+#     "pyyaml",
+#     "requests",
+# ]
+# ///
 import sys
 import os
 import os.path

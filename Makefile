@@ -18,4 +18,4 @@ publish:
 	rm version.txt
 
 shell:
-	docker run -ti fixmystreet/confirm-asset-fetcher bash
+	docker run -ti fixmystreet/confirm-asset-fetcher /bin/sh
