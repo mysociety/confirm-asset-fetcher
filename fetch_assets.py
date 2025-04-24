@@ -63,6 +63,7 @@ def make_operation_request(config, *operations):
         "utf-8"
     )
     headers = {
+        "User-Agent": "FixMyStreet/1.0",
         "Content-Type": "text/xml; charset=utf-8",
         "Soapaction": "http://www.confirm.co.uk/schema/am/connector/webservice/ProcessOperations",
     }
