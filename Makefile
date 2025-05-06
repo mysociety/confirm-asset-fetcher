@@ -1,3 +1,6 @@
+fetch_local:
+	uv run --script fetch_assets.py
+
 fetch:
 	docker run -i \
 		-e OUTPUT_PREFIX=/output \
