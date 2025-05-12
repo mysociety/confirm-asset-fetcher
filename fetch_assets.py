@@ -125,7 +125,7 @@ def AssetSearchFeaturesForBBOX(source, bbox, feature_types=[]):
 
 
 def get_graphql_features(source, bbox, layer):
-    x1, y1, x2, y2 = bbox
+    x1, y1, x2, y2 = (int(i) for i in bbox)
     feature_types = layer["feature_types"]
     url = f"{source['url'].rstrip("/")}/{source['tenant']}/graphql"
     headers = {
@@ -139,7 +139,7 @@ def get_graphql_features(source, bbox, layer):
         """{features(filter: {geometry: {intersectsBbox: {X1:%s X2:%s Y1:%s Y2:%s}} featureTypeCode: {inList: [ %s ]}})@_size_1000{centralAssetId centroidEasting centroidNorthing featureKey featureId featureTypeCode geometry key location notes siteCode featureType@_size_1000{featureGroupCode name}}}"""
         % (x1, x2, y1, y2, types)
     )
-    log(f"Querying GraphQL for bbox {bbox}")
+    log(f"Querying GraphQL for bbox {(x1, x2, y1, y2)}")
     response = requests.post(url, json={"query": query}, headers=headers)
     response.raise_for_status()
 
