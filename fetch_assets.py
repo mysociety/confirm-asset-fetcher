@@ -125,7 +125,6 @@ def AssetSearchFeaturesForBBOX(source, bbox, feature_types=[]):
 
 
 def get_graphql_features(source, bbox, layer):
-    x1, y1, x2, y2 = (int(i) for i in bbox)
     feature_types = layer["feature_types"]
     url = f"{source['url'].rstrip("/")}/{source['tenant']}/graphql"
     headers = {
@@ -137,12 +136,24 @@ def get_graphql_features(source, bbox, layer):
     geom_srs = layer.get("geometry_srs", 4326)
     output_srs = layer.get("output_srs", 27700)
 
+    if bbox is not None:
+        x1, y1, x2, y2 = (int(i) for i in bbox)
+        geometry_query = """geometry: {intersectsBbox: {X1:%s X2:%s Y1:%s Y2:%s}}""" % (
+            x1,
+            x2,
+            y1,
+            y2,
+        )
+        log(f"Querying GraphQL for bbox {(x1, x2, y1, y2)}")
+    else:
+        geometry_query = ""
+        log("Querying GraphQL with no bbox")
+
     types = ",".join(feature_types)
     query = (
-        """{features(filter: {geometry: {intersectsBbox: {X1:%s X2:%s Y1:%s Y2:%s}} featureTypeCode: {inList: [ %s ]}})@_size_1000{centralAssetId centroidEasting centroidNorthing featureKey featureId featureTypeCode geometry key location notes siteCode featureType@_size_1000{featureGroupCode name}}}"""
-        % (x1, x2, y1, y2, types)
+        """{features(filter: {%s featureTypeCode: {inList: [ %s ]}})@_size_1000{centralAssetId centroidEasting centroidNorthing featureKey featureId featureTypeCode geometry key location notes siteCode featureType@_size_1000{featureGroupCode name}}}"""
+        % (geometry_query, types)
     )
-    log(f"Querying GraphQL for bbox {(x1, x2, y1, y2)}")
     response = requests.post(url, json={"query": query}, headers=headers)
     response.raise_for_status()
 
@@ -402,7 +413,8 @@ def process_layer(layer, config):
             layer["mapit_id"], api_key
         )  # , reproject=not graphql)
     else:
-        bboxes = [[int(x) for x in layer["bbox"].split(",")]]
+        # assuming that having no area ID means we can just fetch everything in one go
+        bboxes = [None]
 
     log(f"Saving layer {layer['output']}")
 
