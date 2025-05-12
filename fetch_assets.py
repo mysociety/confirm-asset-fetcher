@@ -134,6 +134,9 @@ def get_graphql_features(source, bbox, layer):
         + b64encode(f"{source['user']}:{source['token']}".encode()).decode(),
     }
 
+    geom_srs = layer.get("geometry_srs", 4326)
+    output_srs = layer.get("output_srs", 27700)
+
     types = ",".join(feature_types)
     query = (
         """{features(filter: {geometry: {intersectsBbox: {X1:%s X2:%s Y1:%s Y2:%s}} featureTypeCode: {inList: [ %s ]}})@_size_1000{centralAssetId centroidEasting centroidNorthing featureKey featureId featureTypeCode geometry key location notes siteCode featureType@_size_1000{featureGroupCode name}}}"""
@@ -156,7 +159,17 @@ def get_graphql_features(source, bbox, layer):
         feature = {"type": "Feature", "id": "-1", "properties": props}
 
         if geometry:
-            feature["geometry"] = wkt.loads(f"SRID=27700;{geometry}")
+            # might need to reproject this feature
+            if geom_srs != output_srs:
+                gdf = gpd.GeoDataFrame(
+                    geometry=gpd.GeoSeries.from_wkt([geometry]),
+                    crs=geom_srs,
+                ).to_crs(output_srs)
+                feature["geometry"] = gdf.geometry.iloc[0].__geo_interface__
+                log(f"{geometry} became {feature['geometry']}")
+            else:
+                feature["geometry"] = wkt.loads(f"SRID={geom_srs};{geometry}")
+
         else:
             feature["geometry"] = wkt.loads(
                 f"SRID=27700;POINT({props['centroidEasting']} {props['centroidNorthing']})"
@@ -422,7 +435,7 @@ def process_layer(layer, config):
     }
 
     meta = {
-        "crs": {"init": f"epsg:{layer.get('output_epsg', '27700')}"},
+        "crs": {"init": f"epsg:{layer.get('output_srs', '27700')}"},
         "driver": DRIVERS.get(layer["output"].rsplit(".", 1)[-1]),
         "schema": {
             "geometry": geometry_type,
