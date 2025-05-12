@@ -166,7 +166,6 @@ def get_graphql_features(source, bbox, layer):
                     crs=geom_srs,
                 ).to_crs(output_srs)
                 feature["geometry"] = gdf.geometry.iloc[0].__geo_interface__
-                log(f"{geometry} became {feature['geometry']}")
             else:
                 feature["geometry"] = wkt.loads(f"SRID={geom_srs};{geometry}")
 
