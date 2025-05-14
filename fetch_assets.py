@@ -137,27 +137,26 @@ def get_graphql_features(source, bbox, layer):
     output_srs = layer.get("output_srs", 27700)
 
     if bbox is not None:
-        x1, y1, x2, y2 = (int(i) for i in bbox)
-        geometry_query = """geometry: {intersectsBbox: {X1:%s X2:%s Y1:%s Y2:%s}}""" % (
-            x1,
-            x2,
-            y1,
-            y2,
+        geometry_query = (
+            """geometry: {intersectsBbox: {X1: %s, Y1: %s, X2: %s, Y2: %s}},""" % bbox
         )
-        log(f"Querying GraphQL for bbox {(x1, x2, y1, y2)}")
+        log(f"Querying GraphQL for bbox {bbox}")
     else:
         geometry_query = ""
         log("Querying GraphQL with no bbox")
 
     types = ",".join(feature_types)
     query = (
-        """{features(filter: {%s featureTypeCode: {inList: [ %s ]}})@_size_1000{centralAssetId centroidEasting centroidNorthing featureKey featureId featureTypeCode geometry key location notes siteCode featureType@_size_1000{featureGroupCode name}}}"""
+        """{features(filter: {%s featureTypeCode: {inList: [ %s ]}, dead: {equals: "N"}, applyOptionalSecurity: true}) {centralAssetId centroidEasting centroidNorthing featureKey featureId featureTypeCode geometry key location notes siteCode featureType {featureGroupCode name}}}"""
         % (geometry_query, types)
     )
     response = requests.post(url, json={"query": query}, headers=headers)
     response.raise_for_status()
 
-    for props in response.json()["data"]["features"]:
+    log("GraphQL response received.")
+    features = response.json()["data"]["features"]
+    log("Parsed JSON response")
+    for props in features:
         ftype = props.pop("featureType", {})
         ftype["featureTypeName"] = ftype.pop("name")
         props.update(ftype)
@@ -305,7 +304,7 @@ def get_bbox_in_bng(geometry):
     return bng_geometry.bounds
 
 
-def subdivide_polygon(polygon, max_size_meters=1000, reproject=True):
+def subdivide_polygon(polygon, max_size_meters=1000, output_bng=True):
     """Subdivide a polygon into smaller polygons with max dimension of max_size_meters"""
     # Get appropriate UTM projection for accurate measurements
     utm_proj = get_utm_projection(polygon)
@@ -342,7 +341,7 @@ def subdivide_polygon(polygon, max_size_meters=1000, reproject=True):
             if wgs84_cell.intersects(polygon):
                 intersection = wgs84_cell.intersection(polygon)
                 if not intersection.is_empty:
-                    if reproject:
+                    if output_bng:
                         # Get bounding box in BNG (EPSG:27700)
                         (w, s, e, n) = get_bbox_in_bng(intersection)
                     else:
@@ -353,7 +352,7 @@ def subdivide_polygon(polygon, max_size_meters=1000, reproject=True):
         x += max_size_meters
 
 
-def get_mapit_bboxes(area_id, api_key, max_size=1000, reproject=True):
+def get_mapit_bboxes(area_id, api_key, max_size=None, output_bng=True):
     """Main function to download and process GeoJSON"""
     # Download GeoJSON
     geojson_url = f"https://mapit.mysociety.org/area/{area_id}.geojson"
@@ -380,10 +379,16 @@ def get_mapit_bboxes(area_id, api_key, max_size=1000, reproject=True):
 
         # Handle different geometry types
         if geom.geom_type == "Polygon":
-            yield from subdivide_polygon(geom, max_size, reproject)
+            if max_size is not None:
+                yield from subdivide_polygon(geom, max_size, output_bng)
+            else:
+                yield geom.bounds
         elif geom.geom_type == "MultiPolygon":
             for poly in geom.geoms:
-                yield from subdivide_polygon(poly, max_size, reproject)
+                if max_size is not None:
+                    yield from subdivide_polygon(poly, max_size, output_bng)
+                else:
+                    yield poly.bounds
         else:
             log(
                 f"Skipping {geom.geom_type} geometry (only Polygon and MultiPolygon supported)"
@@ -410,8 +415,11 @@ def process_layer(layer, config):
     if "mapit_id" in layer:
         api_key = (config.get("mapit") or {}).get("api_key")
         bboxes = get_mapit_bboxes(
-            layer["mapit_id"], api_key
-        )  # , reproject=not graphql)
+            layer["mapit_id"],
+            api_key,
+            max_size=layer.get("box_size"),
+            output_bng=not graphql,
+        )
     else:
         # assuming that having no area ID means we can just fetch everything in one go
         bboxes = [None]
