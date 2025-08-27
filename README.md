@@ -18,11 +18,10 @@ in this repository.
 
 ## Running locally
 
-The script uses [Poetry](https://python-poetry.org) for virtualenv management, so install that if you haven't already. Then, run the script:
+The script uses [uv](https://github.com/astral-sh/uv) for virtualenv management, so install that if you haven't already. Then, run the script:
 
 ```
-$ poetry install
-$ poetry run python fetch_assets.py
+$ uv run --script fetch_assets.py
 ```
 
 ## Caveats
